@@ -10,6 +10,8 @@ import { parseRecords, RepairRecord } from "./domain";
 const KEY = "ruodian.records.v1";
 type Store = {
   records: RepairRecord[];
+  reportDraft: RepairRecord | null;
+  setReportDraft: (draft: RepairRecord) => void;
   ready: boolean;
   error: string;
   save: (record: RepairRecord) => Promise<void>;
@@ -18,6 +20,7 @@ type Store = {
 };
 const Context = createContext<Store | null>(null);
 export function RecordsProvider({ children }: React.PropsWithChildren) {
+  const [reportDraft, setReportDraft] = useState<RepairRecord | null>(null);
   const [records, setRecords] = useState<RepairRecord[]>([]);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
@@ -59,6 +62,8 @@ export function RecordsProvider({ children }: React.PropsWithChildren) {
     <Context.Provider
       value={{
         records,
+        reportDraft,
+        setReportDraft,
         ready,
         error,
         reload,

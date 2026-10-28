@@ -57,7 +57,7 @@ export default function Settings() {
       </Card>
       <Card>
         <Text style={styles.h2}>关于弱电智诊</Text>
-        <Text style={styles.subtitle}>版本 0.1.0 · 第一阶段基础版本</Text>
+        <Text style={styles.subtitle}>版本 0.2.0 · 第一阶段基础版本</Text>
         <Text style={styles.body}>
           面向弱电安装、维修与运维人员的现场排障助手。当前非正式商业服务，不承诺故障诊断准确率。
         </Text>

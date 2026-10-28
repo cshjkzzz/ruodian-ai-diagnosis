@@ -73,7 +73,7 @@ test("完整排障、返回修改、跳过、保存、编辑、刷新持久化�
     .click();
   await page.getByRole("button", { name: "查看排查总结" }).click();
   await expect(
-    page.getByText("已标记为验证通过", { exact: true }),
+    page.getByText("已由用户确认修复", { exact: true }),
   ).toBeVisible();
   await page
     .getByRole("textbox", { name: "现场备注" })
