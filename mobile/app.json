@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "弱电智诊",
+    "slug": "ruodian-ai-diagnosis",
+    "scheme": "ruodian",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ruodian.diagnosis"
+    },
+    "android": {
+      "package": "com.ruodian.diagnosis"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-status-bar"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -147,3 +147,15 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Expo / Python local development
+.expo/
+web-build/
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+backend/.data/
+playwright-report/
+test-results/
+mobile/dist-native/
