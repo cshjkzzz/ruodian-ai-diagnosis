@@ -13,6 +13,7 @@ import {
   truncateAfter,
   RepairRecord,
 } from "../src/domain";
+import { generateReport, mergeReportForSave } from "../src/report";
 import { useRecords } from "../src/storage";
 import {
   Screen,
@@ -24,7 +25,6 @@ import {
   Field,
   styles,
   colors,
-  Icon,
 } from "../src/ui";
 export default function Diagnosis() {
   const params = useLocalSearchParams<{
@@ -45,17 +45,12 @@ export default function Diagnosis() {
     `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
   );
   const store = useRecords();
-  const done = index >= steps.length;
   const step = steps[Math.min(index, steps.length - 1)];
   const answer = answers[step.id];
   function choose(value: Answer) {
     setAnswers((old) => truncateAfter({ ...old, [step.id]: value }, index));
   }
-  async function save() {
-    if (busy.current) return;
-    busy.current = true;
-    setSaving(true);
-    setError("");
+  function buildRecord(currentAnswers = answers): RepairRecord {
     const category = (
       categories.some((c) => c.id === params.category)
         ? params.category
@@ -68,15 +63,28 @@ export default function Diagnosis() {
       brand: params.brand || "",
       model: params.model || "",
       description:
-        params.description || "摄像头能搜索到，但录像机添加后显示离线",
+        params.description?.trim() || "摄像头能搜索到，但录像机添加后显示离线",
       notes,
-      answers,
-      status: diagnosisStatus(answers),
+      answers: currentAnswers,
+      status: diagnosisStatus(currentAnswers),
       createdAt: createdAt.current,
       updatedAt: new Date().toISOString(),
     };
+    return { ...record, report: generateReport(record) };
+  }
+  async function save() {
+    if (busy.current) return;
+    busy.current = true;
+    setSaving(true);
+    setError("");
     try {
-      await store.save(record);
+      const record = buildRecord();
+      await store.save(
+        mergeReportForSave(
+          record,
+          store.records.find((r) => r.id === record.id),
+        ),
+      );
       setSavedId(record.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存失败，请重试");
@@ -85,11 +93,15 @@ export default function Diagnosis() {
       setSaving(false);
     }
   }
+  function openReport(currentAnswers = answers) {
+    store.setReportDraft(buildRecord(currentAnswers));
+    router.push("/report/preview");
+  }
   return (
     <Screen>
       <Text style={styles.badge}>现场示例 / 监控设备离线</Text>
       <Heading
-        title={done ? "每一步，都有迹可循" : "循着线索，逐项确认"}
+        title="循着线索，逐项确认"
         subtitle={
           params.description || "摄像头能搜索到，但录像机添加后显示离线"
         }
@@ -102,9 +114,7 @@ export default function Diagnosis() {
       )}
       <View style={{ gap: 10 }}>
         <View style={styles.between}>
-          <Text style={styles.h3}>
-            {done ? "流程回顾" : `检查 ${index + 1} / ${steps.length}`}
-          </Text>
+          <Text style={styles.h3}>{`检查 ${index + 1} / ${steps.length}`}</Text>
           <Text style={styles.subtitle}>已记录 {progress(answers)} 项</Text>
         </View>
         <View
@@ -120,100 +130,68 @@ export default function Diagnosis() {
           />
         </View>
       </View>
-      {done ? (
-        <Card>
-          <Icon
-            name={
-              diagnosisStatus(answers) === "resolved"
-                ? "check-circle"
-                : "clipboard"
-            }
-            size={34}
-          />
-          <Text style={styles.h2}>
-            {diagnosisStatus(answers) === "resolved"
-              ? "已标记为验证通过"
-              : "仍需进一步排查"}
-          </Text>
-          <Text style={styles.subtitle}>
-            此状态来自你选择的现场结果，不是系统判定。跳过的项目仍需在现场确认。
-          </Text>
-          {steps.map((s, i) => (
-            <View key={s.id} style={styles.between}>
-              <Text style={[styles.body, { flex: 1 }]}>
-                {i + 1}. {s.title}
-              </Text>
-              <Chip
-                title={
-                  { pass: "已通过", fail: "有异常", skip: "已跳过" }[
-                    answers[s.id] ?? "skip"
-                  ]
-                }
-                onPress={() => setIndex(i)}
-              />
-            </View>
-          ))}
-        </Card>
-      ) : (
-        <Card>
-          <Text style={styles.badge}>检查 0{index + 1}</Text>
-          <Text style={styles.h2}>{step.title}</Text>
-          <Text style={styles.body}>{step.description}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.h3}>{step.check}</Text>
-          <View style={{ gap: 10 }}>
-            <Button
-              title={step.pass}
-              secondary={answer !== "pass"}
-              onPress={() => choose("pass")}
-            />
-            <Button
-              title={step.fail}
-              secondary={answer !== "fail"}
-              onPress={() => choose("fail")}
-            />
-          </View>
-          {answer && (
-            <View
-              accessibilityLiveRegion="polite"
-              style={{
-                padding: 14,
-                backgroundColor: answer === "fail" ? "#FFF3E2" : colors.light,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={styles.body}>
-                {answer === "pass"
-                  ? step.passNote
-                  : answer === "fail"
-                    ? step.failNote
-                    : "本项已跳过，不视为检查通过。"}
-              </Text>
-            </View>
-          )}
-          <View style={styles.wrap}>
-            <Chip
-              title="上一步"
-              onPress={() => (index ? setIndex(index - 1) : router.back())}
-            />
-            <Chip
-              title="跳过本项"
-              active={answer === "skip"}
-              onPress={() => {
-                choose("skip");
-                setIndex(index + 1);
-              }}
-            />
-          </View>
+      <Card>
+        <Text style={styles.badge}>检查 0{index + 1}</Text>
+        <Text style={styles.h2}>{step.title}</Text>
+        <Text style={styles.body}>{step.description}</Text>
+        <View style={styles.divider} />
+        <Text style={styles.h3}>{step.check}</Text>
+        <View style={{ gap: 10 }}>
           <Button
-            title={
-              index === steps.length - 1 ? "查看排查总结" : "记录结果，下一步"
-            }
-            disabled={!answer}
-            onPress={() => setIndex(index + 1)}
+            title={step.pass}
+            secondary={answer !== "pass"}
+            onPress={() => choose("pass")}
           />
-        </Card>
-      )}
+          <Button
+            title={step.fail}
+            secondary={answer !== "fail"}
+            onPress={() => choose("fail")}
+          />
+        </View>
+        {answer && (
+          <View
+            accessibilityLiveRegion="polite"
+            style={{
+              padding: 14,
+              backgroundColor: answer === "fail" ? "#FFF3E2" : colors.light,
+              borderRadius: 12,
+            }}
+          >
+            <Text style={styles.body}>
+              {answer === "pass"
+                ? step.passNote
+                : answer === "fail"
+                  ? step.failNote
+                  : "本项已跳过，不视为检查通过。"}
+            </Text>
+          </View>
+        )}
+        <View style={styles.wrap}>
+          <Chip
+            title="上一步"
+            onPress={() => (index ? setIndex(index - 1) : router.back())}
+          />
+          <Chip
+            title="跳过本项"
+            active={answer === "skip"}
+            onPress={() => {
+              choose("skip");
+              if (index === steps.length - 1)
+                openReport({ ...answers, [step.id]: "skip" });
+              else setIndex(index + 1);
+            }}
+          />
+        </View>
+        <Button
+          title={
+            index === steps.length - 1 ? "查看排查总结" : "记录结果，下一步"
+          }
+          disabled={!answer}
+          onPress={() =>
+            index === steps.length - 1 ? openReport() : setIndex(index + 1)
+          }
+        />
+      </Card>
       <Card>
         <Field
           label="现场备注"

@@ -1,10 +1,16 @@
+import {
+  isDiagnosisReport,
+  isRepairConfirmation,
+  type DiagnosisReport,
+  type RepairConfirmation,
+} from "./report";
 import demo from "../../shared/demo.json";
 export const categories = demo.categories;
 export const articles = demo.articles;
 export const steps = demo.steps;
 export type Category = "camera" | "network" | "access" | "computer";
 export type Answer = "pass" | "fail" | "skip";
-export type Answers = Record<string, Answer>;
+export type Answers = Partial<Record<string, Answer>>;
 export type RepairRecord = {
   id: string;
   title: string;
@@ -17,6 +23,8 @@ export type RepairRecord = {
   answers: Answers;
   createdAt: string;
   updatedAt: string;
+  report?: DiagnosisReport;
+  confirmation?: RepairConfirmation;
 };
 export const categoryName = (id: string) =>
   categories.find((c) => c.id === id)?.name ?? "其他";
@@ -62,6 +70,9 @@ export function parseRecords(raw: string | null): RepairRecord[] {
         ["pending", "resolved"].includes(v.status) &&
         typeof v.createdAt === "string" &&
         typeof v.updatedAt === "string" &&
+        (v.report === undefined || isDiagnosisReport(v.report)) &&
+        (v.confirmation === undefined ||
+          isRepairConfirmation(v.confirmation)) &&
         v.answers &&
         typeof v.answers === "object" &&
         Object.values(v.answers).every((a) =>

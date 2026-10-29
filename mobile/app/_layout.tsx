@@ -23,6 +23,10 @@ export default function Layout() {
             options={{ title: "现场排障 · 演示" }}
           />
           <Stack.Screen name="article/[id]" options={{ title: "知识详情" }} />
+          <Stack.Screen
+            name="report/[id]"
+            options={{ title: "诊断报告 · 演示" }}
+          />
           <Stack.Screen name="record/[id]" options={{ title: "维修记录" }} />
           <Stack.Screen name="settings" options={{ title: "设置" }} />
           <Stack.Screen name="profile" options={{ title: "用户资料" }} />

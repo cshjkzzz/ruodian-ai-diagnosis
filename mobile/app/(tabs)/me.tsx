@@ -119,7 +119,7 @@ export default function Me() {
           </Card>
         </Pressable>
       ))}
-      <DemoNotice text="弱电智诊 v0.1.0 · 产品基础演示版。尚未接入用户登录、真实 AI、图片识别或支付。" />
+      <DemoNotice text="弱电智诊 v0.2.0 · 产品基础演示版。尚未接入用户登录、真实 AI、图片识别或支付。" />
     </Screen>
   );
 }
